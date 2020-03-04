@@ -41,6 +41,7 @@ func Test_basicCacher_Cache(t *testing.T) {
 		t.Fatalf("get was called %v times (expected in [45,55])", cnt)
 	}
 }
+
 func Test_basicCacher_Load(t *testing.T) {
 	c := New(100*time.Second, func() interface{} {
 		return 1
