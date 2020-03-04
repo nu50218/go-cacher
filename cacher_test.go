@@ -3,7 +3,7 @@ package cacher
 import (
 	"context"
 	"reflect"
-	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,23 +16,26 @@ func Test_basicCacher_Cache(t *testing.T) {
 		return atomic.AddInt32(&cnt, 1)
 	})
 
-	attack := func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				runtime.Goexit()
-			default:
-				c.Load()
-			}
-		}
-	}
+	wg := sync.WaitGroup{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	for i := 0; i < 100; i++ {
-		go attack(ctx)
+		wg.Add(1)
+		go func(ctx context.Context) {
+		L:
+			for {
+				select {
+				case <-ctx.Done():
+					break L
+				default:
+					c.Load()
+				}
+			}
+			wg.Done()
+		}(ctx)
 	}
-	<-ctx.Done()
+	wg.Wait()
 
 	if cnt < 45 || 55 < cnt {
 		t.Fatalf("get was called %v times (expected in [45,55])", cnt)
