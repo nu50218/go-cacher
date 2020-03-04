@@ -19,7 +19,7 @@ func New(expires time.Duration, get func() interface{}) Cacher {
 }
 
 type basicCacher struct {
-	val     atomic.Value
+	val     interface{}
 	expires time.Duration
 	update  time.Time
 	mut     sync.Mutex
@@ -28,11 +28,11 @@ type basicCacher struct {
 
 func (c *basicCacher) Load() interface{} {
 	c.mut.Lock()
+	defer c.mut.Unlock()
 	t := time.Now()
 	if t.Sub(c.update) > c.expires {
 		c.update = t
-		c.val.Store(c.get())
+		c.val = c.get()
 	}
-	c.mut.Unlock()
-	return c.val.Load()
+	return c.val
 }
