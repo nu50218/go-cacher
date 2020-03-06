@@ -10,6 +10,8 @@ type Cacher interface {
 	Load() interface{}
 }
 
+type NewCacherFunc func(expires time.Duration, get func() interface{}) Cacher
+
 func New(expires time.Duration, get func() interface{}) Cacher {
 	return &basicCacher{
 		val:     atomic.Value{},
